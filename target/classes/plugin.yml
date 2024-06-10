@@ -1,0 +1,9 @@
+name: FFA
+version: '1.0-SNAPSHOT'
+main: me.hi.ffa.FFA
+api-version: '1.20'
+commands:
+  break:
+    description: allows to break in FFA
+  savekit:
+    description: allows to save a custom kit
