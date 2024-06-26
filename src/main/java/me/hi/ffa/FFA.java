@@ -15,6 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
@@ -38,26 +39,23 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scoreboard.Criterias;
-import org.bukkit.scoreboard.DisplaySlot;
-import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.ScoreboardManager;
+import org.bukkit.scoreboard.*;
 
 public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
     public HashMap<Player, Integer> kills = new HashMap();
     public HashMap<Player, Integer> breakperm = new HashMap();
     public HashMap<Player, ItemStack[]> invs = new HashMap();
     public HashMap<Player, Integer> kill_streak = new HashMap();
-
-    public FFA() {
-    }
+    //public HashMap<Player, Integer> points = new HashMap<>();
+    public Scoreboard scoreboard1;
 
     public void onEnable() {
         System.out.println("The plugin has started");
         this.getServer().getPluginManager().registerEvents(this, this);
         this.getServer().getPluginManager().registerEvents(new savekit(), this);
         this.getServer().getPluginManager().registerEvents(new TNTinst(), this);
+        this.getServer().getPluginManager().registerEvents(new Eventhandlers(), this);
+        this.getServer().getPluginManager().registerEvents(new SpawnProtection(), this);
         this.getCommand("break").setExecutor(this);
         this.getCommand("savekit").setExecutor(new savekit());
         this.breakperm = new HashMap();
@@ -76,6 +74,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         }
 
     }
+
 
     @EventHandler
     public void onPlayerTeleport(PlayerTeleportEvent event) {
@@ -104,9 +103,11 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             player.setFoodLevel(20);
             player.setSaturation(1.0E9F);
             int kill = this.getkillsfromfile(player);
+            //int pts = this.getpointsfromfile(player);
             this.kill_streak.put(player, 0);
             this.createNewsScoreboard(player, kill);
             this.kills.put(player, kill);
+            //this.points.put(player, pts);
             this.breakperm.put(player, 0);
             player.sendTitle(ChatColor.YELLOW + "" + ChatColor.BOLD + "Welcome to the FFA", ChatColor.RED + "You can change your kit with /savekit");
         }
@@ -129,6 +130,14 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             this.kills.put(killer, (Integer)this.kills.get(killer) + 1);
             this.kill_streak.put(killer, (Integer)this.kill_streak.get(killer) + 1);
             this.kill_streak.put(player, 0);
+            //int victimPoints = this.points.get(player);
+            //int killerPoints = this.points.get(killer);
+            //int pointsGained = (int) (0.05 * victimPoints);
+            //this.points.put(killer, killerPoints + pointsGained);
+            //this.points.put(player, victimPoints - pointsGained);
+            //this.refreshKillsInFile(killer);
+            //this.refreshPointsInFile(killer);
+            //this.refreshPointsInFile(player);
             this.createNewsScoreboard(killer, (Integer)this.kills.get(killer));
             this.createNewsScoreboard(player, (Integer)this.kills.get(player));
             this.refreshKillsInFile(killer);
@@ -157,6 +166,8 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
 
     }
 
+
+
     public void createNewsScoreboard(Player player, Integer kill) {
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
@@ -183,135 +194,6 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
     }
 
 
-    @EventHandler
-    public void onBlockBurn(BlockBurnEvent event) {
-        event.setCancelled(true);
-    }
-
-    @EventHandler
-    public void onBlockSpread(BlockSpreadEvent event) {
-        event.setCancelled(true);
-    }
-
-    @EventHandler
-    public void onWeatherChange(WeatherChangeEvent lp) {
-        World world = lp.getWorld();
-
-        if (Objects.equals(lp.getWorld().getName(), "FFA_Sg2")) {
-            lp.setCancelled(true);
-            world.setStorm(true);
-            world.setThundering(true);
-
-            Bukkit.getLogger().info("Rain has been toggled off in the world: " + world.getName());
-        }
-    }
-
-    @EventHandler
-    public void Drop(PlayerDropItemEvent event) {event.setCancelled(true);}
-
-    @EventHandler
-    public void onChestOpen(InventoryOpenEvent event) {
-        InventoryHolder holder = event.getInventory().getHolder();
-        if (holder instanceof Chest) {
-            event.setCancelled(true);
-        }
-    }
-
-    @EventHandler
-    public void onButtonInteract(PlayerInteractEvent event) {
-        if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            Block clickedBlock = event.getClickedBlock();
-            if (clickedBlock != null) {
-                Material blockType = clickedBlock.getType();
-                if (blockType == Material.STONE_BUTTON || blockType == Material.WOOD_BUTTON) {
-                    event.setCancelled(true);
-                }
-            }
-        }
-    }
-
-    @EventHandler
-    public void onBlockPlace(BlockPlaceEvent event) {
-        Material blockType = event.getBlock().getType();
-        if (blockType == Material.TNT || blockType == Material.WEB) {
-            Location loc = event.getBlock().getLocation();
-
-            double x1 = 24.0, y1 = 42.0, z1 = -12.0;
-            double x2 = 45.0, y2 = 37.0, z2 = 13.0;
-
-            // Calculate the min and max coordinates
-            double minX = Math.min(x1, x2);
-            double minY = Math.min(y1, y2);
-            double minZ = Math.min(z1, z2);
-            double maxX = Math.max(x1, x2);
-            double maxY = Math.max(y1, y2);
-            double maxZ = Math.max(z1, z2);
-
-            if (loc.getX() >= minX && loc.getX() <= maxX &&
-                    loc.getY() >= minY && loc.getY() <= maxY &&
-                    loc.getZ() >= minZ && loc.getZ() <= maxZ) {
-                event.setCancelled(true);
-            }
-        }
-    }
-
-    @EventHandler
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR) {
-            Material itemType = event.getItem() != null ? event.getItem().getType() : null;
-            if (itemType == Material.FLINT_AND_STEEL) {
-                Location loc;
-                if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-                    loc = event.getClickedBlock().getLocation();
-                } else {
-                    loc = event.getPlayer().getLocation();
-                }
-
-                double x1 = 24.0, y1 = 42.0, z1 = -12.0;
-                double x2 = 45.0, y2 = 37.0, z2 = 13.0;
-
-                // Calculate the min and max coordinates
-                double minX = Math.min(x1, x2);
-                double minY = Math.min(y1, y2);
-                double minZ = Math.min(z1, z2);
-                double maxX = Math.max(x1, x2);
-                double maxY = Math.max(y1, y2);
-                double maxZ = Math.max(z1, z2);
-
-                if (loc.getX() >= minX && loc.getX() <= maxX &&
-                        loc.getY() >= minY && loc.getY() <= maxY &&
-                        loc.getZ() >= minZ && loc.getZ() <= maxZ) {
-                    event.setCancelled(true);
-                }
-            }
-        }
-    }
-
-    @EventHandler
-    public void onPlayerDamage(EntityDamageByEntityEvent event) {
-        if (event.getEntity() instanceof Player && event.getDamager() instanceof Player) {
-            Player damaged = (Player) event.getEntity();
-            Location loc = damaged.getLocation();
-
-            double x1 = 24.0, y1 = 42.0, z1 = -12.0;
-            double x2 = 45.0, y2 = 37.0, z2 = 13.0;
-
-            // Calculate the min and max coordinates
-            double minX = Math.min(x1, x2);
-            double minY = Math.min(y1, y2);
-            double minZ = Math.min(z1, z2);
-            double maxX = Math.max(x1, x2);
-            double maxY = Math.max(y1, y2);
-            double maxZ = Math.max(z1, z2);
-
-            if (loc.getX() >= minX && loc.getX() <= maxX &&
-                    loc.getY() >= minY && loc.getY() <= maxY &&
-                    loc.getZ() >= minZ && loc.getZ() <= maxZ) {
-                event.setCancelled(true);
-
-            }
-        }
-    }
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
@@ -493,7 +375,34 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         }
 
     }
+/*
+    public int getpointsfromfile(Player player) {
+        ObjectMapper mapper = new ObjectMapper();
+        File file = new File("FFA_info.json");
 
+        try {
+            JsonNode root = mapper.readTree(file);
+            return root.path(player.getName()).path("points").asInt();
+        } catch (IOException var5) {
+            var5.printStackTrace();
+            return 400;
+        }
+    }
+
+    public void refreshPointsInFile(Player player) {
+        ObjectMapper mapper = new ObjectMapper();
+        File file = new File("FFA_info.json");
+
+        try {
+            JsonNode root = mapper.readTree(file);
+            ((ObjectNode)root.path(player.getName())).put("points", (Integer)this.points.get(player));
+            mapper.writeValue(file, root);
+        } catch (IOException var5) {
+            var5.printStackTrace();
+        }
+
+    }
+*/
     public void onDisable() {
     }
 }
