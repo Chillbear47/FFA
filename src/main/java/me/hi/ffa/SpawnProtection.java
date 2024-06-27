@@ -96,4 +96,31 @@ public class SpawnProtection implements Listener {
         }
     }
 
+    @EventHandler
+    public void onRodDamage(EntityDamageByEntityEvent event) {
+        // Coordinates defining the area
+        double x1 = 24.0, y1 = 42.0, z1 = -12.0;
+        double x2 = 45.0, y2 = 37.0, z2 = 13.0;
+
+        // Calculate the min and max coordinates
+        double minX = Math.min(x1, x2);
+        double minY = Math.min(y1, y2);
+        double minZ = Math.min(z1, z2);
+        double maxX = Math.max(x1, x2);
+        double maxY = Math.max(y1, y2);
+        double maxZ = Math.max(z1, z2);
+
+        // Check if the damager is a fishing rod hook
+        if (event.getDamager() instanceof org.bukkit.entity.FishHook) {
+            Location loc = event.getEntity().getLocation();
+
+            // Check if the location is within the specified area
+            if (loc.getX() >= minX && loc.getX() <= maxX &&
+                    loc.getY() >= minY && loc.getY() <= maxY &&
+                    loc.getZ() >= minZ && loc.getZ() <= maxZ) {
+                event.setCancelled(true);
+            }
+        }
+    }
+
 }
