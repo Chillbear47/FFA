@@ -56,6 +56,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         this.getServer().getPluginManager().registerEvents(new TNTinst(), this);
         this.getServer().getPluginManager().registerEvents(new Eventhandlers(), this);
         this.getServer().getPluginManager().registerEvents(new SpawnProtection(), this);
+        this.getServer().getPluginManager().registerEvents(new SavekitProtection(), this);
         this.getCommand("break").setExecutor(this);
         this.getCommand("savekit").setExecutor(new savekit());
         this.breakperm = new HashMap();

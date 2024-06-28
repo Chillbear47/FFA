@@ -27,22 +27,40 @@ public class TNTinst implements Listener {
             if (block.getType() == Material.TNT) {
                 Location loc = block.getLocation();
 
-                // Define the coordinates boundaries
+                // Define the first set of coordinates boundaries
                 double x1 = 24.0, y1 = 42.0, z1 = -12.0;
                 double x2 = 45.0, y2 = 37.0, z2 = 13.0;
 
-                // Calculate the min and max coordinates
-                double minX = Math.min(x1, x2);
-                double minY = Math.min(y1, y2);
-                double minZ = Math.min(z1, z2);
-                double maxX = Math.max(x1, x2);
-                double maxY = Math.max(y1, y2);
-                double maxZ = Math.max(z1, z2);
+                // Calculate the min and max coordinates for the first set
+                double minX1 = Math.min(x1, x2);
+                double minY1 = Math.min(y1, y2);
+                double minZ1 = Math.min(z1, z2);
+                double maxX1 = Math.max(x1, x2);
+                double maxY1 = Math.max(y1, y2);
+                double maxZ1 = Math.max(z1, z2);
 
-                // Check if the block location is within the defined coordinates
-                if (loc.getX() >= minX && loc.getX() <= maxX &&
-                        loc.getY() >= minY && loc.getY() <= maxY &&
-                        loc.getZ() >= minZ && loc.getZ() <= maxZ) {
+                // Define the second set of coordinates boundaries
+                double x3 = -4.0, y3 = 203.0, z3 = -6.0;
+                double x4 = 6.0, y4 = 193.0, z4 = 9.0;
+
+                // Calculate the min and max coordinates for the second set
+                double minX2 = Math.min(x3, x4);
+                double minY2 = Math.min(y3, y4);
+                double minZ2 = Math.min(z3, z4);
+                double maxX2 = Math.max(x3, x4);
+                double maxY2 = Math.max(y3, y4);
+                double maxZ2 = Math.max(z3, z4);
+
+                // Check if the block location is within either of the defined coordinates
+                boolean withinFirstSet = loc.getX() >= minX1 && loc.getX() <= maxX1 &&
+                        loc.getY() >= minY1 && loc.getY() <= maxY1 &&
+                        loc.getZ() >= minZ1 && loc.getZ() <= maxZ1;
+
+                boolean withinSecondSet = loc.getX() >= minX2 && loc.getX() <= maxX2 &&
+                        loc.getY() >= minY2 && loc.getY() <= maxY2 &&
+                        loc.getZ() >= minZ2 && loc.getZ() <= maxZ2;
+
+                if (withinFirstSet || withinSecondSet) {
                     // Cancel the event to prevent TNT placement
                     b.setCancelled(true);
                 } else {
