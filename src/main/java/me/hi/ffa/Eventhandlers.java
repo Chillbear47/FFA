@@ -22,16 +22,24 @@ public class Eventhandlers implements Listener {
 
 
     @EventHandler
-    public void Drop(PlayerDropItemEvent event) {event.setCancelled(true);}
+    public void Drop(PlayerDropItemEvent event) {
+        if (event.getPlayer().getWorld().getName().equals("FFA_Sg2")) {
+            event.setCancelled(true);
+        }
+    }
 
     @EventHandler
     public void onBlockBurn(BlockBurnEvent event) {
-        event.setCancelled(true);
+        if (event.getBlock().getWorld().getName().equals("FFA_Sg2")) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler
     public void onBlockSpread(BlockSpreadEvent event) {
-        event.setCancelled(true);
+        if (event.getBlock().getWorld().getName().equals("FFA_Sg2")) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler
@@ -52,7 +60,11 @@ public class Eventhandlers implements Listener {
     public void onChestOpen(InventoryOpenEvent event) {
         InventoryHolder holder = event.getInventory().getHolder();
         if (holder instanceof Chest) {
-            event.setCancelled(true);
+            Chest chest = (Chest) holder;
+            // Check if the chest is in the world named "FFA_Sg2"
+            if (chest.getWorld().getName().equals("FFA_Sg2")) {
+                event.setCancelled(true);
+            }
         }
     }
 
@@ -63,7 +75,9 @@ public class Eventhandlers implements Listener {
             if (clickedBlock != null) {
                 Material blockType = clickedBlock.getType();
                 if (blockType == Material.STONE_BUTTON || blockType == Material.WOOD_BUTTON) {
-                    event.setCancelled(true);
+                    if (clickedBlock.getWorld().getName().equals("FFA_Sg2")) {
+                        event.setCancelled(true);
+                    }
                 }
             }
         }

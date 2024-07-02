@@ -1,5 +1,6 @@
-me\hi\ffa\savekit.class
 me\hi\ffa\TNTinst.class
+me\hi\ffa\SavekitProtection.class
+me\hi\ffa\SpawnProtection.class
+me\hi\ffa\savekit.class
 me\hi\ffa\FFA.class
 me\hi\ffa\Eventhandlers.class
-me\hi\ffa\SpawnProtection.class
