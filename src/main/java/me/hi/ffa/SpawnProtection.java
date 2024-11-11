@@ -20,25 +20,25 @@ public class SpawnProtection implements Listener {
             if (blockType == Material.TNT || blockType == Material.WEB) {
                 Location loc = event.getBlock().getLocation();
 
-            double x1 = 24.0, y1 = 42.0, z1 = -12.0;
-            double x2 = 45.0, y2 = 37.0, z2 = 13.0;
+                double x1 = 24.0, y1 = 42.0, z1 = -12.0;
+                double x2 = 45.0, y2 = 37.0, z2 = 13.0;
 
-            // Calculate the min and max coordinates
-            double minX = Math.min(x1, x2);
-            double minY = Math.min(y1, y2);
-            double minZ = Math.min(z1, z2);
-            double maxX = Math.max(x1, x2);
-            double maxY = Math.max(y1, y2);
-            double maxZ = Math.max(z1, z2);
+                // Calculate the min and max coordinates
+                double minX = Math.min(x1, x2);
+                double minY = Math.min(y1, y2);
+                double minZ = Math.min(z1, z2);
+                double maxX = Math.max(x1, x2);
+                double maxY = Math.max(y1, y2);
+                double maxZ = Math.max(z1, z2);
 
-            if (loc.getX() >= minX && loc.getX() <= maxX &&
-                    loc.getY() >= minY && loc.getY() <= maxY &&
-                    loc.getZ() >= minZ && loc.getZ() <= maxZ) {
-                event.setCancelled(true);
+                if (loc.getX() >= minX && loc.getX() <= maxX &&
+                        loc.getY() >= minY && loc.getY() <= maxY &&
+                        loc.getZ() >= minZ && loc.getZ() <= maxZ) {
+                    event.setCancelled(true);
+                }
             }
         }
     }
-        }
 
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {

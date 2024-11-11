@@ -23,12 +23,19 @@ public class savekit implements CommandExecutor, Listener {
         if (sender instanceof Player) {
             Player player = (Player)sender;
             if (Objects.equals(player.getWorld().getName(), "FFA_Sg2")) {
-                Location loc = new Location(player.getWorld(), 0.0, 200.0, 0.0);
-                player.teleport(loc);
                 player.getInventory().clear();
+
                 ItemStack flintAndSteel = new ItemStack(Material.FLINT_AND_STEEL);
                 flintAndSteel.setDurability((short)64);
-                player.getInventory().addItem(new ItemStack[]{new ItemStack(Material.STONE_SWORD), new ItemStack(Material.FISHING_ROD), flintAndSteel, new ItemStack(Material.WEB), new ItemStack(Material.TNT)});
+
+                ItemStack[] basicKit = new ItemStack[]{
+                        new ItemStack(Material.STONE_SWORD),
+                        new ItemStack(Material.FISHING_ROD),
+                        flintAndSteel,
+                        new ItemStack(Material.WEB),
+                        new ItemStack(Material.TNT)};
+
+                player.getInventory().addItem(basicKit);
             }
         }
 
