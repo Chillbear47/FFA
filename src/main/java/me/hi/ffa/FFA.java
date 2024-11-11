@@ -42,7 +42,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.*;
 
 public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
-    public HashMap<Player, Integer> kills = new HashMap();
+    public HashMap<Player, Integer> kills = new HashMap(); //kills e lagra i json fil, når man logge inn og ut av gamemoden FFA. Målet e å gjør d samma for kill_streak.
     public HashMap<Player, Integer> breakperm = new HashMap();
     public HashMap<Player, ItemStack[]> invs = new HashMap();
     public HashMap<Player, Integer> kill_streak = new HashMap();
@@ -62,15 +62,13 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         this.breakperm = new HashMap();
         Iterator var1 = Bukkit.getWorld("FFA_Sg2").getPlayers().iterator();
 
-        while(var1.hasNext()) {
-            Player p = (Player)var1.next();
-            this.kill_streak.put(p, 0);
-            int kl = this.getkillsfromfile(p);
-            this.kills.put(p, kl);
+        while (var1.hasNext()) {
+            Player p = (Player) var1.next();
+            this.updateStats(p);
             this.breakperm.put(p, 0);
             this.createNewsScoreboard(p, kl);
             List<ItemStack> temp_stacks = this.getinvs(p);
-            ItemStack[] temp_array = (ItemStack[])temp_stacks.toArray(new ItemStack[0]);
+            ItemStack[] temp_array = (ItemStack[]) temp_stacks.toArray(new ItemStack[0]);
             this.invs.put(p, temp_array);
         }
 
@@ -91,8 +89,8 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             List<ItemStack> temp_stacks = this.getinvs(player);
             Iterator var5 = temp_stacks.iterator();
 
-            while(var5.hasNext()) {
-                ItemStack i = (ItemStack)var5.next();
+            while (var5.hasNext()) {
+                ItemStack i = (ItemStack) var5.next();
                 player.getInventory().addItem(new ItemStack[]{i});
             }
 
@@ -105,7 +103,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             player.setSaturation(1.0E9F);
             int kill = this.getkillsfromfile(player);
             //int pts = this.getpointsfromfile(player);
-            this.kill_streak.put(player, 0);
+            this.kill_streak.put(player, maxKillstreak(player));
             this.createNewsScoreboard(player, kill);
             this.kills.put(player, kill);
             //this.points.put(player, pts);
@@ -120,7 +118,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         Player player = event.getEntity().getPlayer();
         if (player.getWorld().getName().equals("FFA_Sg2")) {
             player.getInventory().clear();
-            player.getInventory().setContents((ItemStack[])this.invs.get(player));
+            player.getInventory().setContents((ItemStack[]) this.invs.get(player));
             player.getInventory().setBoots(new ItemStack(Material.IRON_BOOTS));
             player.getInventory().setLeggings(new ItemStack(Material.IRON_LEGGINGS));
             player.getInventory().setChestplate(new ItemStack(Material.IRON_CHESTPLATE));
@@ -128,9 +126,10 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             player.setFoodLevel(20);
             player.setSaturation(1.0E9F);
             Player killer = player.getKiller();
-            this.kills.put(killer, (Integer)this.kills.get(killer) + 1);
-            this.kill_streak.put(killer, (Integer)this.kill_streak.get(killer) + 1);
-            this.kill_streak.put(player, 0);
+            this.kills.put(killer, (Integer) this.kills.get(killer) + 1);
+            this.kill_streak.put(killer, (Integer) this.kill_streak.get(killer) + 1);
+            //this.maxKillstreak(player);
+            this.kill_streak.put(player, 0);  // her resette du den       Ok
             //int victimPoints = this.points.get(player);
             //int killerPoints = this.points.get(killer);
             //int pointsGained = (int) (0.05 * victimPoints);
@@ -139,16 +138,16 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             //this.refreshKillsInFile(killer);
             //this.refreshPointsInFile(killer);
             //this.refreshPointsInFile(player);
-            this.createNewsScoreboard(killer, (Integer)this.kills.get(killer));
-            this.createNewsScoreboard(player, (Integer)this.kills.get(player));
+            this.createNewsScoreboard(killer, (Integer) this.kills.get(killer));
+            this.createNewsScoreboard(player, (Integer) this.kills.get(player));
             this.refreshKillsInFile(killer);
             killer.setHealth(20.0);
-            killer.getInventory().setContents((ItemStack[])this.invs.get(killer));
-            if ((Integer)this.kill_streak.get(killer) % 5 == 0) {
+            killer.getInventory().setContents((ItemStack[]) this.invs.get(killer));
+            if ((Integer) this.kill_streak.get(killer) % 5 == 0) {
                 Iterator var4 = Bukkit.getWorld("FFA_Sg2").getPlayers().iterator();
 
-                while(var4.hasNext()) {
-                    Player p = (Player)var4.next();
+                while (var4.hasNext()) {
+                    Player p = (Player) var4.next();
                     p.sendMessage(ChatColor.RED + killer.getName() + ChatColor.RESET + " has a killstreak of " + ChatColor.BOLD + " " + ChatColor.RED + this.kill_streak.get(killer));
                 }
             }
@@ -159,14 +158,13 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
     @EventHandler
     public void refillfood(FoodLevelChangeEvent fl) {
         if (fl.getEntity() instanceof Player) {
-            Player p = (Player)fl.getEntity();
+            Player p = (Player) fl.getEntity();
             if (Objects.equals(p.getWorld().getName(), "FFA_Sg2")) {
                 fl.setCancelled(true);
             }
         }
 
     }
-
 
 
     public void createNewsScoreboard(Player player, Integer kill) {
@@ -178,10 +176,10 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         this.kills.put(player, kill);
         objective.getScore(ChatColor.WHITE + "    ").setScore(11);
         objective.getScore(ChatColor.RED + "" + ChatColor.BOLD + "⚕ Kills ⚕                 ").setScore(10);
-        objective.getScore(ChatColor.YELLOW + ((Integer)this.kills.get(player)).toString()).setScore(9);
+        objective.getScore(ChatColor.YELLOW + ((Integer) this.kills.get(player)).toString()).setScore(9);
         objective.getScore(ChatColor.WHITE + "     ").setScore(8);
         objective.getScore(ChatColor.AQUA + " ※ Kill Streak ※").setScore(7);
-        objective.getScore(ChatColor.RED + ((Integer)this.kill_streak.get(player)).toString()).setScore(6);
+        objective.getScore(ChatColor.RED + ((Integer) this.kill_streak.get(player)).toString()).setScore(6);
         objective.getScore(ChatColor.WHITE + "   ").setScore(5);
         objective.getScore(ChatColor.GOLD + "Points                ").setScore(4);
         objective.getScore(ChatColor.LIGHT_PURPLE + "0").setScore(3);
@@ -195,14 +193,13 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
     }
 
 
-
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
         if (player.getWorld().getName().equals("FFA_Sg2")) {
             Block brokenBlock = event.getBlock();
             if (brokenBlock.getType() != Material.WEB) {
-                if ((Integer)this.breakperm.get(player) == 0) {
+                if ((Integer) this.breakperm.get(player) == 0) {
                     event.setCancelled(true);
                 }
             } else {
@@ -226,7 +223,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
 
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (sender instanceof Player) {
-            Player p = (Player)sender;
+            Player p = (Player) sender;
             if (Objects.equals(p.getWorld().getName(), "FFA_Sg2")) {
                 if (Objects.equals(args[0], "true")) {
                     this.breakperm.put(p, 1);
@@ -241,6 +238,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         return true;
     }
 
+
     public int getkillsfromfile(Player player) {
         int x = 0;
         String path = this.getServer().getWorldContainer().getAbsolutePath();
@@ -253,7 +251,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             if (jsonNode.path("Players").has(player.getName())) {
                 x = jsonNode.path("Players").path(player.getName()).path("kills").asInt();
             } else {
-                ((ObjectNode)jsonNode.path("Players")).putObject(player.getName()).put("kills", 0).put("kit", false);
+                ((ObjectNode) jsonNode.path("Players")).putObject(player.getName()).put("kills", (Integer) this.kills.get(player)).put("kit", false).put("killstreak", (Integer) this.kill_streak.get(player));
                 objectMapper.writeValue(file, jsonNode);
             }
         } catch (IOException var7) {
@@ -409,7 +407,8 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
 }
 
 
-/*
+
+/*                                                Backup
 package me.hi.ffa;
 
 import com.fasterxml.jackson.databind.JsonNode;
