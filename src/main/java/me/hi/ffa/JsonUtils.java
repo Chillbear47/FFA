@@ -8,14 +8,12 @@ import java.io.File;
 import java.io.IOException;
 
 public class JsonUtils {
-
-    private static final String JSON_FILE_PATH = Bukkit.getServer().getWorldContainer().getAbsolutePath() + "/FFA_info.json";
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     // Method to load JSON data
-    public static JsonNode loadJson() {
+    public static JsonNode loadJson(File FILE) {
         try {
-            return objectMapper.readTree(new File(JSON_FILE_PATH));
+            return objectMapper.readTree(FILE);
         } catch (IOException e) {
             Bukkit.getLogger().warning("Failed to load JSON data.");
             return null;
@@ -23,9 +21,9 @@ public class JsonUtils {
     }
 
     // Method to save JSON data
-    public static void saveJson(JsonNode root) {
+    public static void saveJson(File FILE, JsonNode root) {
         try {
-            objectMapper.writeValue(new File(JSON_FILE_PATH), root);
+            objectMapper.writeValue(FILE, root);
         } catch (IOException e) {
             Bukkit.getLogger().warning("Failed to save JSON data.");
         }

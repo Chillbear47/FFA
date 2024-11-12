@@ -20,12 +20,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.*;
 
 import java.util.*;
+import java.io.File;
 
 public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
 
     private static final String WORLD_NAME = "FFA_Sg2";
-    private final String JSON_FILE_PATH = getServer().getWorldContainer().getAbsolutePath() + "/FFA_info.json";
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    public File FFA_FILE = new File(getDataFolder(), "FFA_info.json");
 
     private final HashMap<Player, Integer> kills = new HashMap<>();
     private final HashMap<Player, Integer> breakperm = new HashMap<>();
@@ -38,7 +38,6 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
 
     @Override
     public void onEnable() {
-        Bukkit.getPluginManager().registerEvents(this, this);
         this.getServer().getPluginManager().registerEvents(this, this);
         this.getServer().getPluginManager().registerEvents(new savekit(), this);
         this.getServer().getPluginManager().registerEvents(new TNTinst(), this);
@@ -49,9 +48,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         this.getCommand("kits").setExecutor(new kits());
         this.getCommand("editkits").setExecutor(new kits());
         this.getCommand("break").setExecutor(this);
-        Player asd = Bukkit.getPlayer("Chillbear");
-        asd.sendMessage("hei");
-
+        this.getCommand("savekit").setExecutor(new savekit());
 
         for (Player p : Bukkit.getWorld(WORLD_NAME).getPlayers()) {
             loadPlayerStats(p);
@@ -93,7 +90,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
     }
 
     private Result getPlayerData(Player player, boolean update) {
-        JsonNode root = JsonUtils.loadJson();
+        JsonNode root = JsonUtils.loadJson(FFA_FILE);
         if (root == null) return new Result(0, "default", 0, 0, 0, 1.0);
 
         JsonNode playerNode = root.path("Players").path(player.getName());
@@ -125,7 +122,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         playerNode.put("points", 0);
         playerNode.put("deaths", 0);
         playerNode.put("multiplier", 1.0);
-        JsonUtils.saveJson(root);
+        JsonUtils.saveJson(FFA_FILE, root);
 
         return new Result(0, "default", 0, 0, 0, 1.0);
     }
@@ -152,12 +149,12 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         playerNode.put("deaths", deaths.get(player));
         playerNode.put("multiplier", multiplier.get(player));
 
-        JsonUtils.saveJson(root);
+        JsonUtils.saveJson(FFA_FILE, root);
     }
 
     private ItemStack[] getInventoryContents(Player player) {
         List<ItemStack> items = new ArrayList<>(); // Use List to store items dynamically
-        JsonNode root = JsonUtils.loadJson();
+        JsonNode root = JsonUtils.loadJson(FFA_FILE);
 
         if (root == null) return new ItemStack[0]; // Return an empty array if root is null
 
@@ -326,9 +323,4 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         }
         return true;
     }
-
-    @Override
-    public void onDisable() {
-    }
 }
-

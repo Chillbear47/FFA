@@ -22,9 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class kits implements CommandExecutor, Listener{
+public class kits implements CommandExecutor, Listener {
 
-    private final String JSON_FILE_PATH = Bukkit.getServer().getWorldContainer().getAbsolutePath() + "/FFA_info.json";
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String GUI_TITLE = "Select a Kit";
@@ -105,7 +104,7 @@ public class kits implements CommandExecutor, Listener{
     }
 
     private void addKit(Player player, String kitName) {
-        JsonNode root = JsonUtils.loadJson();
+        JsonNode root = JsonUtils.loadJson(FFA_FILE);
         assert root != null;
         ObjectNode kitsNode = (ObjectNode) root.path("Kits");
         ObjectNode kitNode = objectMapper.createObjectNode();
@@ -118,19 +117,19 @@ public class kits implements CommandExecutor, Listener{
         }
 
         kitsNode.set(kitName, kitNode);
-        JsonUtils.saveJson(root);
+        JsonUtils.saveJson(FFA_FILE, root);
     }
 
     private void removeKit(String kitName) {
-        JsonNode root = JsonUtils.loadJson();
+        JsonNode root = JsonUtils.loadJson(FFA_FILE);
         assert root != null;
         ((ObjectNode) root.path("Kits")).remove(kitName);
-        JsonUtils.saveJson(root);
+        JsonUtils.saveJson(FFA_FILE, root);
     }
 
     private void equipKit(Player player, String kitName) {
         try {
-            JsonNode root = JsonUtils.loadJson();
+            JsonNode root = JsonUtils.loadJson(FFA_FILE);
             assert root != null;
             JsonNode kitNode = root.path("Kits").path(kitName);
             player.getInventory().clear();
@@ -151,7 +150,7 @@ public class kits implements CommandExecutor, Listener{
 
     public List<String> getUnlockedKits(Player player) {
         List<String> unlockedKits = new ArrayList<>();
-        JsonNode root = JsonUtils.loadJson();
+        JsonNode root = JsonUtils.loadJson(FFA_FILE);
         if (root == null) return unlockedKits;
 
         JsonNode playerNode = root.path("Players").path(player.getName());
@@ -168,7 +167,7 @@ public class kits implements CommandExecutor, Listener{
     }
 
     public void addUnlockedKit(Player player, String kitName) {
-        JsonNode root = JsonUtils.loadJson();
+        JsonNode root = JsonUtils.loadJson(FFA_FILE);
         assert root != null;
         ObjectNode playerNode = (ObjectNode) root.path("Players").path(player.getName());
 
@@ -179,12 +178,12 @@ public class kits implements CommandExecutor, Listener{
         ArrayNode unlockedKits = (ArrayNode) playerNode.get("unlockedKits");
         unlockedKits.add(kitName);
 
-        JsonUtils.saveJson(root);
+        JsonUtils.saveJson(FFA_FILE, root);
     }
 
     public List<String> getAllKits() {
         List<String> kits = new ArrayList<>();
-        JsonNode root = JsonUtils.loadJson();
+        JsonNode root = JsonUtils.loadJson(FFA_FILE);
         assert root != null;
         root.path("Kits").fieldNames().forEachRemaining(kits::add);
         return kits;
