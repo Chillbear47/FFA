@@ -72,6 +72,23 @@ public class kits implements CommandExecutor, Listener {
                 return true;
             }
 
+            if (label.equalsIgnoreCase("unlockkit") && args.length == 2) {
+                String playerName = args[0];
+                String kitName = args[1];
+                List<String> allKits = getAllKits();
+
+                if (allKits.contains(kitName)) {
+                    unlockKit(playerName, kitName);
+                    player.sendMessage("Unlocked kit " + kitName + " for " + playerName);
+                } else {
+                    player.sendMessage(kitName + " does not exist");
+                    String allKitsList = String.join(", ", allKits);
+
+                    player.sendMessage("Available kits: " + allKitsList);
+                }
+
+            }
+
             player.sendMessage("Usage: /kits or /editkits <add/remove> <kitname>");
             return true;
         } catch (Exception e) {
@@ -263,8 +280,8 @@ public class kits implements CommandExecutor, Listener {
             }
 
             JsonNode playerNode = root.path("Players").path(player.getName());
-            if (playerNode.has("unlockedKits")) {
-                for (JsonNode kitNode : playerNode.get("unlockedKits")) {
+            if (playerNode.has("kitsunlocked")) {
+                for (JsonNode kitNode : playerNode.get("kitsunlocked")) {
                     unlockedKits.add(kitNode.asText());
                 }
             }
@@ -285,25 +302,25 @@ public class kits implements CommandExecutor, Listener {
         }
     }
 
-    public void addUnlockedKit(Player player, String kitName) {
+    public void unlockKit(String playerName, String kitName) {
         try {
             JsonNode root = JsonUtils.loadJson(plugin.FFA_FILE);
             if (root == null) {
                 plugin.getLogger().severe("Failed to load FFA_info.json.");
                 return;
             }
-            ObjectNode playerNode = (ObjectNode) root.path("Players").path(player.getName());
+            ObjectNode playerNode = (ObjectNode) root.path("Players").path(playerName);
 
-            if (!playerNode.has("unlockedKits")) {
-                playerNode.putArray("unlockedKits");
+            if (!playerNode.has("kitsunlocked")) {
+                playerNode.putArray("kitsunlocked");
             }
 
-            ArrayNode unlockedKits = (ArrayNode) playerNode.get("unlockedKits");
+            ArrayNode unlockedKits = (ArrayNode) playerNode.get("kitsunlocked");
             unlockedKits.add(kitName);
 
             JsonUtils.saveJson(plugin.FFA_FILE, root);
         } catch (Exception e) {
-            plugin.getLogger().severe("Error adding unlocked kit " + kitName + " for player " + player.getName() + ": " + e.getMessage());
+            plugin.getLogger().severe("Error adding unlocked kit " + kitName + " for player " + playerName + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
