@@ -1,8 +1,12 @@
 package me.hi.ffa;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public class Result {
     private int kills;
-    private String kit;
+    private List<String> kitsunlocked;
     private int killstreak;
     private int points;
     private int deaths;
@@ -11,7 +15,7 @@ public class Result {
     // No-argument constructor with default values
     public Result() {
         this.kills = 0;
-        this.kit = "default";
+        this.kitsunlocked = new ArrayList<>(Arrays.asList("default"));
         this.killstreak = 0;
         this.points = 0;
         this.deaths = 0;
@@ -19,9 +23,9 @@ public class Result {
     }
 
     // Constructor with all fields
-    public Result(int kills, String kit, int killstreak, int points, int deaths, double multiplier) {
+    public Result(int kills, List<String> kitsunlocked, int killstreak, int points, int deaths, double multiplier) {
         this.kills = kills;
-        this.kit = kit;
+        this.kitsunlocked = kitsunlocked;
         this.killstreak = killstreak;
         this.points = points;
         this.deaths = deaths;
@@ -31,7 +35,7 @@ public class Result {
     public int getKills() { return kills; }
     public int getKillstreak() { return killstreak; }
     public int getPoints() { return points; }
-    public String getKit() { return kit; }
+    public List<String> getKitsUnlocked() {return kitsunlocked;}
     public int getDeaths() { return deaths; }
     public double getMultiplier() { return multiplier; }
 
@@ -39,7 +43,7 @@ public class Result {
     public String toString() {
         return "Result{" +
                 "kills=" + kills +
-                ", kit='" + kit + '\'' +
+                ", kitsunlocked=" + kitsunlocked +
                 ", killstreak=" + killstreak +
                 ", points=" + points +
                 ", deaths=" + deaths +

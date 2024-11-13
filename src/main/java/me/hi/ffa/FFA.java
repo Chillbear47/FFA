@@ -2,6 +2,7 @@ package me.hi.ffa;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.bukkit.*;
 import org.bukkit.command.Command;
@@ -40,7 +41,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
     private final HashMap<Player, ItemStack[]> invs = new HashMap<>();
     private final HashMap<Player, Integer> kill_streak = new HashMap<>();
     private final HashMap<Player, Integer> points = new HashMap<>();
-    private final HashMap<Player, String> kit = new HashMap<>();
+    private final HashMap<Player, List<String>> unlockedKits = new HashMap<>();
     private final HashMap<Player, Integer> deaths = new HashMap<>();
     private final HashMap<Player, Double> multiplier = new HashMap<>();
 
@@ -110,7 +111,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             Result result = this.getPlayerData(player, false);
             int kill = result.getKills();
             int killstreak = result.getKillstreak();
-            String kitsunlocked = result.getKit();
+            List<String> kitsunlocked = result.getKitsUnlocked();
             //this.createNewsScoreboard(player, kill);
 
             player.getInventory().setBoots(new ItemStack(Material.IRON_BOOTS));
@@ -141,13 +142,17 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
 
     private Result getPlayerData(Player player, boolean update) {
         JsonNode root = JsonUtils.loadJson(FFA_FILE);
-        if (root == null) return new Result(0, "default", 0, 0, 0, 1.0);
+        if (root == null) return new Result(0, Arrays.asList("default"), 0, 0, 0, 1.0);
 
         JsonNode playerNode = root.path("Players").path(player.getName());
         if (!playerNode.isMissingNode()) {
+            // Collect kitsunlocked array values
+            List<String> kitsunlocked = new ArrayList<>();
+            playerNode.path("kitsunlocked").forEach(kitNode -> kitsunlocked.add(kitNode.asText()));
+
             Result playerData = new Result(
                     playerNode.path("kills").asInt(0),
-                    playerNode.path("kitsunlocked").asText("default"),
+                    kitsunlocked,
                     playerNode.path("killstreak").asInt(0),
                     playerNode.path("points").asInt(0),
                     playerNode.path("deaths").asInt(0),
@@ -182,16 +187,26 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
 
     private Result initializePlayerStats(Player player, JsonNode root) {
         ObjectNode playersNode = (ObjectNode) root.path("Players");
-        ObjectNode playerNode = playersNode.putObject(player.getName());
-        playerNode.put("kills", 0);
-        playerNode.put("kitsunlocked", "default");
-        playerNode.put("killstreak", 0);
-        playerNode.put("points", 0);
-        playerNode.put("deaths", 0);
-        playerNode.put("multiplier", 1.0);
-        JsonUtils.saveJson(FFA_FILE, root);
 
-        return new Result(0, "default", 0, 0, 0, 1.0);
+        // Only create the player node if it doesn’t already exist
+        if (playersNode.path(player.getName()).isMissingNode()) {
+            ObjectNode playerNode = playersNode.putObject(player.getName());
+            playerNode.put("kills", 0);
+
+            // Initialize kitsunlocked as an empty array
+            playerNode.putArray("kitsunlocked").add("default");  // Start with "default" unlocked kit
+
+            playerNode.put("killstreak", 0);
+            playerNode.put("points", 0);
+            playerNode.put("deaths", 0);
+            playerNode.put("multiplier", 1.0);
+
+            JsonUtils.saveJson(FFA_FILE, root);
+            return new Result(0, new ArrayList<>(Arrays.asList("default")), 0, 0, 0, 1.0);
+        }
+
+        // If the player node already exists, return current values
+        return getPlayerData(player, false);
     }
 
     private void loadPlayerStats(Player player) {
@@ -199,7 +214,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         kills.put(player, data.getKills());
         kill_streak.put(player, data.getKillstreak());
         points.put(player, data.getPoints());
-        kit.put(player, data.getKit());
+        unlockedKits.put(player, data.getKitsUnlocked());
         deaths.put(player, data.getDeaths());
         multiplier.put(player, data.getMultiplier());
 
@@ -209,15 +224,27 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
     private void updatePlayerStats(Player player, JsonNode root) {
         ObjectNode playersNode = (ObjectNode) root.path("Players");
         ObjectNode playerNode = playersNode.putObject(player.getName());
+
+        // Add basic stats
         playerNode.put("kills", kills.get(player));
-        playerNode.put("kit", kit.get(player));
         playerNode.put("killstreak", kill_streak.get(player));
         playerNode.put("points", points.get(player));
         playerNode.put("deaths", deaths.get(player));
         playerNode.put("multiplier", multiplier.get(player));
 
+        // Handle kitsunlocked list
+        List<String> unlockedKitsList = unlockedKits.get(player);
+        ArrayNode kitsunlockedNode = playerNode.putArray("kitsunlocked");
+        if (unlockedKitsList != null) {
+            for (String kit : unlockedKitsList) {
+                kitsunlockedNode.add(kit);
+            }
+        }
+
+        // Save the updated JSON data
         JsonUtils.saveJson(FFA_FILE, root);
     }
+
 
     private ItemStack[] getInventoryContents(Player player) {
         List<ItemStack> items = new ArrayList<>(); // Use List to store items dynamically

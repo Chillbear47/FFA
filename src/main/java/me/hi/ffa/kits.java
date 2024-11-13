@@ -86,6 +86,7 @@ public class kits implements CommandExecutor, Listener {
 
                     player.sendMessage("Available kits: " + allKitsList);
                 }
+                return true;
 
             }
 
@@ -151,31 +152,58 @@ public class kits implements CommandExecutor, Listener {
                 plugin.getLogger().severe("Failed to load FFA_info.json.");
                 return;
             }
-            ObjectNode kitsNode = (ObjectNode) root.path("Kits");
-            ObjectNode kitNode = objectMapper.createObjectNode();
 
+            ObjectNode kitsNode = (ObjectNode) root.path("Kits");
+
+            // Create a new node for the kit
+            ObjectNode kitNode = objectMapper.createObjectNode();
+            ObjectNode mainKitNode = objectMapper.createObjectNode();
+            ObjectNode armorNode = objectMapper.createObjectNode();
+
+            // Save main inventory items
             for (int i = 0; i < player.getInventory().getContents().length; i++) {
                 ItemStack item = player.getInventory().getContents()[i];
                 if (item != null) {
-                    kitNode.put(String.valueOf(i), item.getType().name() + ":" + item.getAmount());
+                    mainKitNode.put(String.valueOf(i), item.getType().name() + ":" + item.getAmount());
                 }
             }
 
+            // Save armor items
+            ItemStack[] armorContents = player.getInventory().getArmorContents();
+            for (int i = 0; i < armorContents.length; i++) {
+                ItemStack armorItem = armorContents[i];
+                if (armorItem != null) {
+                    armorNode.put(String.valueOf(i), armorItem.getType().name() + ":" + armorItem.getAmount());
+                }
+            }
+
+            // Add the main kit and armor nodes to the kit node
+            kitNode.set("kit", mainKitNode);
+            kitNode.set("armor", armorNode);
+
+            // Add the kit to the kits node
             kitsNode.set(kitName, kitNode);
+
+            // Save the JSON file
             JsonUtils.saveJson(plugin.FFA_FILE, root);
+            plugin.getLogger().info("Kit " + kitName + " added for player " + player.getName());
+
         } catch (Exception e) {
             plugin.getLogger().severe("Error adding kit " + kitName + " for player " + player.getName() + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
 
+
     public void initJsonKit() {
         try {
+            // Define armor and basic kit items
             ItemStack[] ironArmor = new ItemStack[]{
                     new ItemStack(Material.IRON_BOOTS),
                     new ItemStack(Material.IRON_LEGGINGS),
                     new ItemStack(Material.IRON_CHESTPLATE),
-                    new ItemStack(Material.IRON_HELMET)};
+                    new ItemStack(Material.IRON_HELMET)
+            };
 
             ItemStack flintAndSteel = new ItemStack(Material.FLINT_AND_STEEL);
             flintAndSteel.setDurability((short) 64);
@@ -185,19 +213,24 @@ public class kits implements CommandExecutor, Listener {
                     new ItemStack(Material.FISHING_ROD),
                     flintAndSteel,
                     new ItemStack(Material.WEB),
-                    new ItemStack(Material.TNT)};
+                    new ItemStack(Material.TNT)
+            };
 
+            // Load JSON root and handle cases where it's null
             JsonNode root = JsonUtils.loadJson(plugin.FFA_FILE);
-            if (root == null) {
-                plugin.getLogger().severe("Failed to load FFA_info.json.");
-                return;
+            if (root == null || root.isMissingNode()) {
+                root = objectMapper.createObjectNode(); // Create root node if missing
             }
 
-            ObjectNode kitsNode = (ObjectNode) root.path("Kits");
-            if (kitsNode.isMissingNode()) {
+            // Access or create the Kits node
+            ObjectNode kitsNode;
+            if (root.has("Kits")) {
+                kitsNode = (ObjectNode) root.path("Kits");
+            } else {
                 kitsNode = ((ObjectNode) root).putObject("Kits");
             }
 
+            // Create JSON nodes for kit items and armor
             ObjectNode kitNode = objectMapper.createObjectNode();
             ObjectNode armorNode = objectMapper.createObjectNode();
 
@@ -215,17 +248,22 @@ public class kits implements CommandExecutor, Listener {
                 }
             }
 
+            // Add armor and kit to the default kit node
             ObjectNode defaultKitNode = objectMapper.createObjectNode();
             defaultKitNode.set("armor", armorNode);
             defaultKitNode.set("kit", kitNode);
 
+            // Set the default kit in Kits
             kitsNode.set("default", defaultKitNode);
+
+            // Save the updated JSON back to the file
             JsonUtils.saveJson(plugin.FFA_FILE, root);
         } catch (Exception e) {
             plugin.getLogger().severe("Error initializing JSON kit: " + e.getMessage());
             e.printStackTrace();
         }
     }
+
 
     private void removeKit(String kitName) {
         try {
@@ -249,15 +287,50 @@ public class kits implements CommandExecutor, Listener {
                 plugin.getLogger().severe("Failed to load FFA_info.json.");
                 return;
             }
+
             JsonNode kitNode = root.path("Kits").path(kitName);
+            if (kitNode.isMissingNode()) {
+                player.sendMessage("Kit " + kitName + " does not exist.");
+                return;
+            }
+
             player.getInventory().clear();
 
-            kitNode.fields().forEachRemaining(entry -> {
+            // Equip main inventory items
+            JsonNode mainKitNode = kitNode.path("kit");
+            mainKitNode.fields().forEachRemaining(entry -> {
                 String slot = entry.getKey();
                 String[] itemInfo = entry.getValue().asText().split(":");
                 Material material = Material.valueOf(itemInfo[0]);
                 int amount = Integer.parseInt(itemInfo[1]);
                 player.getInventory().setItem(Integer.parseInt(slot), new ItemStack(material, amount));
+            });
+
+            // Equip armor items
+            JsonNode armorNode = kitNode.path("armor");
+            armorNode.fields().forEachRemaining(entry -> {
+                String slot = entry.getKey();
+                String[] itemInfo = entry.getValue().asText().split(":");
+                Material material = Material.valueOf(itemInfo[0]);
+                int amount = Integer.parseInt(itemInfo[1]);
+
+                ItemStack armorItem = new ItemStack(material, amount);
+                switch (Integer.parseInt(slot)) {
+                    case 0:
+                        player.getInventory().setBoots(armorItem);
+                        break;
+                    case 1:
+                        player.getInventory().setLeggings(armorItem);
+                        break;
+                    case 2:
+                        player.getInventory().setChestplate(armorItem);
+                        break;
+                    case 3:
+                        player.getInventory().setHelmet(armorItem);
+                        break;
+                    default:
+                        plugin.getLogger().warning("Invalid armor slot: " + slot + " in kit " + kitName);
+                }
             });
 
         } catch (IllegalArgumentException e) {
@@ -269,6 +342,7 @@ public class kits implements CommandExecutor, Listener {
             e.printStackTrace();
         }
     }
+
 
     public List<String> getUnlockedKits(Player player) {
         List<String> unlockedKits = new ArrayList<>();
@@ -304,26 +378,56 @@ public class kits implements CommandExecutor, Listener {
 
     public void unlockKit(String playerName, String kitName) {
         try {
+            // Load the root JSON node
             JsonNode root = JsonUtils.loadJson(plugin.FFA_FILE);
             if (root == null) {
                 plugin.getLogger().severe("Failed to load FFA_info.json.");
                 return;
             }
-            ObjectNode playerNode = (ObjectNode) root.path("Players").path(playerName);
 
-            if (!playerNode.has("kitsunlocked")) {
-                playerNode.putArray("kitsunlocked");
+            // Access or create the player node
+            ObjectNode playersNode = (ObjectNode) root.path("Players");
+            ObjectNode playerNode;
+            if (playersNode.has(playerName)) {
+                playerNode = (ObjectNode) playersNode.get(playerName);
+            } else {
+                playerNode = playersNode.putObject(playerName);
+                plugin.getLogger().info("Created new player node for " + playerName);
             }
 
-            ArrayNode unlockedKits = (ArrayNode) playerNode.get("kitsunlocked");
-            unlockedKits.add(kitName);
+            // Ensure "kitsunlocked" is an array; create if it doesn’t exist
+            ArrayNode unlockedKits;
+            if (playerNode.has("kitsunlocked")) {
+                unlockedKits = (ArrayNode) playerNode.get("kitsunlocked");
+            } else {
+                unlockedKits = playerNode.putArray("kitsunlocked");
+                plugin.getLogger().info("Created new kitsunlocked array for player " + playerName);
+            }
 
-            JsonUtils.saveJson(plugin.FFA_FILE, root);
+            // Check if the kit is already unlocked to prevent duplicates
+            boolean alreadyUnlocked = false;
+            for (JsonNode kitNode : unlockedKits) {
+                if (kitNode.asText().equals(kitName)) {
+                    alreadyUnlocked = true;
+                    break;
+                }
+            }
+
+            // Add the kit only if it’s not already unlocked
+            if (!alreadyUnlocked) {
+                unlockedKits.add(kitName);
+                JsonUtils.saveJson(plugin.FFA_FILE, root);
+                plugin.getLogger().info("Kit " + kitName + " unlocked for player " + playerName);
+            } else {
+                plugin.getLogger().info("Kit " + kitName + " is already unlocked for player " + playerName);
+            }
         } catch (Exception e) {
             plugin.getLogger().severe("Error adding unlocked kit " + kitName + " for player " + playerName + ": " + e.getMessage());
             e.printStackTrace();
         }
     }
+
+
 
     public List<String> getAllKits() {
         List<String> kits = new ArrayList<>();

@@ -13,3 +13,5 @@ commands:
     description: add and remove kits
   toggleWeatherControl:
     description: toggle control of weather
+  unlockkit:
+    description: unlocks kit for player
