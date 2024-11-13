@@ -25,7 +25,7 @@ import java.io.File;
 public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
 
     private static final String WORLD_NAME = "FFA_Sg2";
-    public File FFA_FILE = new File(getDataFolder(), "FFA_info.json");
+    public final File FFA_FILE = new File(getDataFolder(), "FFA_info.json");
 
     private final HashMap<Player, Integer> kills = new HashMap<>();
     private final HashMap<Player, Integer> breakperm = new HashMap<>();
@@ -38,17 +38,46 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
 
     @Override
     public void onEnable() {
-        this.getServer().getPluginManager().registerEvents(this, this);
-        this.getServer().getPluginManager().registerEvents(new savekit(), this);
-        this.getServer().getPluginManager().registerEvents(new TNTinst(), this);
-        this.getServer().getPluginManager().registerEvents(new Eventhandlers(), this);
-        this.getServer().getPluginManager().registerEvents(new SpawnProtection(), this);
-        this.getServer().getPluginManager().registerEvents(new SavekitProtection(), this);
-        this.getServer().getPluginManager().registerEvents(new kits(), this);
-        this.getCommand("kits").setExecutor(new kits());
-        this.getCommand("editkits").setExecutor(new kits());
-        this.getCommand("break").setExecutor(this);
-        this.getCommand("savekit").setExecutor(new savekit());
+        try {
+            FileHandler fileHandler = new FileHandler("error.log", true);
+            fileHandler.setFormatter(new SimpleFormatter());
+            logger.addHandler(fileHandler);
+
+            File dataFolder = getDataFolder();
+            if (!dataFolder.exists()) {
+                dataFolder.mkdirs(); // Lager mappen hvis den ikke finnes
+                logger.info("Plugin-mappen ble opprettet: " + dataFolder.getPath());
+            }
+
+            if (FFA_FILE.createNewFile()) {
+                logger.info("FFA_info.json filen ble opprettet.");
+                // Initialiser filen med grunnstrukturen
+                initFFA_info();
+            } else {
+                logger.info("FFA_info.json filen finnes allerede.");
+            }
+
+            this.getServer().getPluginManager().registerEvents(this, this);
+            this.getServer().getPluginManager().registerEvents(new savekit(), this);
+            this.getServer().getPluginManager().registerEvents(new TNTinst(), this);
+            this.getServer().getPluginManager().registerEvents(new Eventhandlers(), this);
+            this.getServer().getPluginManager().registerEvents(new SpawnProtection(), this);
+            this.getCommand("break").setExecutor(this);
+            this.getCommand("savekit").setExecutor(new savekit());
+        } catch(Exception e) {
+                logger.severe("En feil oppstod under registrering av events eller kommandoer: " + e.getMessage());
+                e.printStackTrace(); // Skriver stacktrace til konsollen for debugging
+        }
+
+        try {
+            this.getServer().getPluginManager().registerEvents(new kits(this), this);
+            this.getCommand("kits").setExecutor(new kits(this));
+            this.getCommand("editkits").setExecutor(new kits(this));
+        } catch(Exception e) {
+            logger.severe("En feil oppstod under registrering av events eller kommandoer (kits.java): " + e.getMessage());
+            e.printStackTrace(); // Skriver stacktrace til konsollen for debugging
+        }
+
 
         for (Player p : Bukkit.getWorld(WORLD_NAME).getPlayers()) {
             loadPlayerStats(p);
@@ -184,13 +213,24 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         Objective objective = scoreboard.registerNewObjective("Player", "dummy");
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         objective.setDisplayName(ChatColor.YELLOW + "" + ChatColor.BOLD + "⚔ FFA ⚔");
-
-        objective.getScore(ChatColor.RED + "Kills: " + kills.get(player)).setScore(10);
-        objective.getScore(ChatColor.AQUA + "Kill Streak: " + kill_streak.get(player)).setScore(9);
-        objective.getScore(ChatColor.GOLD + "Points: " + points.get(player)).setScore(8);
-
+        objective.getScore(ChatColor.WHITE + "    ").setScore(11);
+        objective.getScore(ChatColor.RED + "" + ChatColor.BOLD + "⚕ Kills ⚕                 ").setScore(10);
+        objective.getScore(ChatColor.YELLOW + kills.get(player).toString()).setScore(9);
+        objective.getScore(ChatColor.WHITE + "     ").setScore(8);
+        objective.getScore(ChatColor.AQUA + " ※ Kill Streak ※").setScore(7);
+        objective.getScore(ChatColor.RED + kill_streak.get(player).toString()).setScore(6);
+        objective.getScore(ChatColor.WHITE + "   ").setScore(5);
+        objective.getScore(ChatColor.GOLD + "Points                ").setScore(4);
+        objective.getScore(ChatColor.LIGHT_PURPLE + points.get(player).toString()).setScore(3);
+        objective.getScore(ChatColor.WHITE + "  ").setScore(2);
+        objective.getScore(ChatColor.YELLOW + "92.222.153.3").setScore(1);
+        player.setScoreboard(scoreboard);
+        Objective obh = scoreboard.registerNewObjective("health", Criterias.HEALTH);
+        obh.setDisplayName(ChatColor.RED + "❤");
+        obh.setDisplaySlot(DisplaySlot.BELOW_NAME);
         player.setScoreboard(scoreboard);
     }
+
 
     private void resetPlayer(Player player) {
         player.getInventory().clear();
@@ -323,4 +363,5 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         }
         return true;
     }
+
 }

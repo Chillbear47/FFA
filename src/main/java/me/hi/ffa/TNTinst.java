@@ -83,3 +83,32 @@ public class TNTinst implements Listener {
 
     }
 }
+
+
+/*
+public void createNewsScoreboard(Player player, Integer kill) {
+        ScoreboardManager manager = Bukkit.getScoreboardManager();
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+        Objective objective = scoreboard.registerNewObjective("Player", "yummy");
+        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+        objective.setDisplayName(ChatColor.YELLOW + "" + ChatColor.BOLD + "⚔ FFA ⚔");
+        this.kills.put(player, kill);
+        objective.getScore(ChatColor.WHITE + "    ").setScore(11);
+        objective.getScore(ChatColor.RED + "" + ChatColor.BOLD + "⚕ Kills ⚕                 ").setScore(10);
+        objective.getScore(ChatColor.YELLOW + ((Integer)this.kills.get(player)).toString()).setScore(9);
+        objective.getScore(ChatColor.WHITE + "     ").setScore(8);
+        objective.getScore(ChatColor.AQUA + " ※ Kill Streak ※").setScore(7);
+        objective.getScore(ChatColor.RED + ((Integer)this.kill_streak.get(player)).toString()).setScore(6);
+        objective.getScore(ChatColor.WHITE + "   ").setScore(5);
+        objective.getScore(ChatColor.GOLD + "Points                ").setScore(4);
+        objective.getScore(ChatColor.LIGHT_PURPLE + "0").setScore(3);
+        objective.getScore(ChatColor.WHITE + "  ").setScore(2);
+        objective.getScore(ChatColor.YELLOW + "178.33.213.67").setScore(1);
+        player.setScoreboard(scoreboard);
+        Objective obh = scoreboard.registerNewObjective("health", Criterias.HEALTH);
+        obh.setDisplayName(ChatColor.RED + "❤");
+        obh.setDisplaySlot(DisplaySlot.BELOW_NAME);
+        player.setScoreboard(scoreboard);
+    }
+
+ */
