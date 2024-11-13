@@ -19,10 +19,18 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.*;
 
+import java.io.IOException;
+import java.util.logging.Logger;
+import java.util.logging.FileHandler;
+import java.util.logging.SimpleFormatter;
+
 import java.util.*;
 import java.io.File;
 
 public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
+    private static final Logger logger = Logger.getLogger(FFA.class.getName());
+
+    public boolean weatherToggleEnabled = true;
 
     private static final String WORLD_NAME = "FFA_Sg2";
     public final File FFA_FILE = new File(getDataFolder(), "FFA_info.json");
@@ -84,8 +92,8 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             invs.put(p, getInventoryContents(p));
         }
         System.out.println("FFA plugin enabled.");
-        Player p = Bukkit.getPlayer("UlrikWF");
-        p.sendMessage("hei");
+        //Player p = Bukkit.getPlayer("UlrikWF");
+        //p.sendMessage("hei");
     }
 
     @EventHandler
@@ -109,6 +117,19 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             player.getInventory().setLeggings(new ItemStack(Material.IRON_LEGGINGS));
             player.getInventory().setChestplate(new ItemStack(Material.IRON_CHESTPLATE));
             player.getInventory().setHelmet(new ItemStack(Material.IRON_HELMET));
+
+            ItemStack flintAndSteel = new ItemStack(Material.FLINT_AND_STEEL);
+            flintAndSteel.setDurability((short)64);
+
+            ItemStack[] basicKit = new ItemStack[]{
+                    new ItemStack(Material.STONE_SWORD),
+                    new ItemStack(Material.FISHING_ROD),
+                    flintAndSteel,
+                    new ItemStack(Material.WEB),
+                    new ItemStack(Material.TNT)};
+
+            player.getInventory().setContents(basicKit);
+
             this.breakperm.put(player, 0);
             this.kills.put(player, kill);
             this.kill_streak.put(player, killstreak);
@@ -139,6 +160,23 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             return playerData;
         } else {
             return initializePlayerStats(player, root);
+        }
+    }
+
+
+    private void initFFA_info() {
+        try {
+            ObjectNode rootNode = JsonUtils.objectMapper.createObjectNode();
+            rootNode.putObject("Players");
+            rootNode.putObject("Kits");
+
+            if (FFA_FILE.length() == 0) { // Sjekk om filen er tom
+                JsonUtils.objectMapper.writerWithDefaultPrettyPrinter().writeValue(FFA_FILE, rootNode);
+                logger.info("FFA_info.json initialisert med standardstruktur.");
+            }
+        } catch (IOException e) {
+            logger.severe("En feil oppstod under initialisering av FFA_info.json: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -260,6 +298,8 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
                 Bukkit.broadcastMessage(ChatColor.RED + killer.getName() + " has a killstreak of " + kill_streak.get(killer));
             }
         }
+        getPlayerData(killer, true);
+        getPlayerData(victim, true);
     }
 
     public void alterPointsOnDeath(Player victim, Player killer) {
@@ -360,8 +400,20 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
 
         if (label.equalsIgnoreCase("break") && args.length > 0) {
             breakperm.put(player, args[0].equalsIgnoreCase("true") ? 1 : 0);
+            return true;
         }
-        return true;
+
+        if (command.getName().equalsIgnoreCase("toggleWeatherControl")) {
+            // Toggle the boolean variable
+            weatherToggleEnabled = !weatherToggleEnabled;
+
+            // Send feedback to the sender
+            String status = weatherToggleEnabled ? "enabled" : "disabled";
+            sender.sendMessage("Weather control is now " + status + ".");
+            Bukkit.getLogger().info("Weather control has been " + status + " by " + sender.getName());
+            return true;
+        }
+        return false;
     }
 
 }

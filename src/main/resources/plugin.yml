@@ -7,3 +7,9 @@ commands:
     description: allows to break in FFA
   savekit:
     description: allows to save a custom kit
+  kits:
+    description: select kit
+  editkits:
+    description: add and remove kits
+  toggleWeatherControl:
+    description: toggle control of weather

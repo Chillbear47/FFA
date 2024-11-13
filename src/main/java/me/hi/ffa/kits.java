@@ -41,72 +41,89 @@ public class kits implements CommandExecutor, Listener {
         }
     }
 
+
+
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("Only players can use this command.");
-            return true;
-        }
-
-        Player player = (Player) sender;
-
-        if (label.equalsIgnoreCase("kits")) {
-            openKitSelectionGUI(player);
-            return true;
-        }
-
-        if (label.equalsIgnoreCase("editkits") && args.length == 2) {
-            String action = args[0].toLowerCase();
-            String kitName = args[1];
-
-            if (action.equals("add")) {
-                addKit(player, kitName);
-                player.sendMessage("Kit " + kitName + " has been added.");
-            } else if (action.equals("remove")) {
-                removeKit(kitName);
-                player.sendMessage("Kit " + kitName + " has been removed.");
-            } else {
-                player.sendMessage("Invalid action. Use 'add' or 'remove'.");
+        try {
+            if (!(sender instanceof Player)) {
+                sender.sendMessage("Only players can use this command.");
+                return true;
             }
-            return true;
-        }
 
-        player.sendMessage("Usage: /kits or /editkits <add/remove> <kitname>");
-        return true;
+            Player player = (Player) sender;
+            if (label.equalsIgnoreCase("kits")) {
+                openKitSelectionGUI(player);
+                return true;
+            }
+
+            if (label.equalsIgnoreCase("editkits") && args.length == 2) {
+                String action = args[0].toLowerCase();
+                String kitName = args[1];
+
+                if (action.equals("add")) {
+                    addKit(player, kitName);
+                    player.sendMessage("Kit " + kitName + " has been added.");
+                } else if (action.equals("remove")) {
+                    removeKit(kitName);
+                    player.sendMessage("Kit " + kitName + " has been removed.");
+                } else {
+                    player.sendMessage("Invalid action. Use 'add' or 'remove'.");
+                }
+                return true;
+            }
+
+            player.sendMessage("Usage: /kits or /editkits <add/remove> <kitname>");
+            return true;
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error executing command: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public void openKitSelectionGUI(Player player) {
-        Inventory gui = Bukkit.createInventory(null, GUI_SIZE, GUI_TITLE);
-        List<String> unlockedKits = getUnlockedKits(player);
+        try {
+            Inventory gui = Bukkit.createInventory(null, GUI_SIZE, GUI_TITLE);
+            List<String> unlockedKits = getUnlockedKits(player);
 
-        for (String kitName : unlockedKits) {
-            ItemStack kitItem = new ItemStack(Material.CHEST);
-            ItemMeta meta = kitItem.getItemMeta();
-            if (meta != null) {
-                meta.setDisplayName(ChatColor.GREEN + kitName);
-                kitItem.setItemMeta(meta);
+            for (String kitName : unlockedKits) {
+                ItemStack kitItem = new ItemStack(Material.CHEST);
+                ItemMeta meta = kitItem.getItemMeta();
+                if (meta != null) {
+                    meta.setDisplayName(ChatColor.GREEN + kitName);
+                    kitItem.setItemMeta(meta);
+                }
+                gui.addItem(kitItem);
             }
-            gui.addItem(kitItem);
-        }
 
-        player.openInventory(gui);
+            player.openInventory(gui);
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error opening kit selection GUI for player " + player.getName() + ": " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        if (!event.getView().getTitle().equals(GUI_TITLE)) return;
+        try {
+            if (!event.getView().getTitle().equals(GUI_TITLE)) return;
 
-        event.setCancelled(true);
-        if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR) return;
+            event.setCancelled(true);
+            if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR) return;
 
-        Player player = (Player) event.getWhoClicked();
-        String kitName = ChatColor.stripColor(Objects.requireNonNull(event.getCurrentItem().getItemMeta()).getDisplayName());
+            Player player = (Player) event.getWhoClicked();
+            String kitName = ChatColor.stripColor(Objects.requireNonNull(event.getCurrentItem().getItemMeta()).getDisplayName());
 
-        if (kitIsUnlocked(player, kitName)) {
-            equipKit(player, kitName);
-            player.closeInventory();
-            player.sendMessage("Equipped kit: " + kitName);
-        } else {
-            player.sendMessage("You haven't unlocked this kit.");
+            if (kitIsUnlocked(player, kitName)) {
+                equipKit(player, kitName);
+                player.closeInventory();
+                player.sendMessage("Equipped kit: " + kitName);
+            } else {
+                player.sendMessage("You haven't unlocked this kit.");
+            }
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error handling inventory click: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -131,6 +148,64 @@ public class kits implements CommandExecutor, Listener {
             JsonUtils.saveJson(plugin.FFA_FILE, root);
         } catch (Exception e) {
             plugin.getLogger().severe("Error adding kit " + kitName + " for player " + player.getName() + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void initJsonKit() {
+        try {
+            ItemStack[] ironArmor = new ItemStack[]{
+                    new ItemStack(Material.IRON_BOOTS),
+                    new ItemStack(Material.IRON_LEGGINGS),
+                    new ItemStack(Material.IRON_CHESTPLATE),
+                    new ItemStack(Material.IRON_HELMET)};
+
+            ItemStack flintAndSteel = new ItemStack(Material.FLINT_AND_STEEL);
+            flintAndSteel.setDurability((short) 64);
+
+            ItemStack[] basicKit = new ItemStack[]{
+                    new ItemStack(Material.STONE_SWORD),
+                    new ItemStack(Material.FISHING_ROD),
+                    flintAndSteel,
+                    new ItemStack(Material.WEB),
+                    new ItemStack(Material.TNT)};
+
+            JsonNode root = JsonUtils.loadJson(plugin.FFA_FILE);
+            if (root == null) {
+                plugin.getLogger().severe("Failed to load FFA_info.json.");
+                return;
+            }
+
+            ObjectNode kitsNode = (ObjectNode) root.path("Kits");
+            if (kitsNode.isMissingNode()) {
+                kitsNode = ((ObjectNode) root).putObject("Kits");
+            }
+
+            ObjectNode kitNode = objectMapper.createObjectNode();
+            ObjectNode armorNode = objectMapper.createObjectNode();
+
+            for (int i = 0; i < basicKit.length; i++) {
+                ItemStack item = basicKit[i];
+                if (item != null) {
+                    kitNode.put(String.valueOf(i), item.getType().name() + ":" + item.getAmount());
+                }
+            }
+
+            for (int i = 0; i < ironArmor.length; i++) {
+                ItemStack item = ironArmor[i];
+                if (item != null) {
+                    armorNode.put(String.valueOf(i), item.getType().name() + ":" + item.getAmount());
+                }
+            }
+
+            ObjectNode defaultKitNode = objectMapper.createObjectNode();
+            defaultKitNode.set("armor", armorNode);
+            defaultKitNode.set("kit", kitNode);
+
+            kitsNode.set("default", defaultKitNode);
+            JsonUtils.saveJson(plugin.FFA_FILE, root);
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error initializing JSON kit: " + e.getMessage());
             e.printStackTrace();
         }
     }

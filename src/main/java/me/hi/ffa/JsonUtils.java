@@ -8,7 +8,7 @@ import java.io.File;
 import java.io.IOException;
 
 public class JsonUtils {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    public static final ObjectMapper objectMapper = new ObjectMapper();
 
     // Method to load JSON data
     public static JsonNode loadJson(File FILE) {
@@ -23,7 +23,7 @@ public class JsonUtils {
     // Method to save JSON data
     public static void saveJson(File FILE, JsonNode root) {
         try {
-            objectMapper.writeValue(FILE, root);
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(FILE, root);
         } catch (IOException e) {
             Bukkit.getLogger().warning("Failed to save JSON data.");
         }
