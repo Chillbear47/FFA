@@ -62,7 +62,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             if (ranksJsonNode != null) {
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     JsonNode playerNode = ranksJsonNode.get(player.getName());
-                    player.sendMessage(ChatColor.getByChar(playerNode.get("rankColor").toPrettyString()) + playerNode.get("prefix").toString() + " " + playerNode.get("name").toString() + ChatColor.RESET);
+                    //player.sendMessage(ChatColor.getByChar(playerNode.get("rankColor").toPrettyString()) + playerNode.get("prefix").toString() + " " + playerNode.get("name").toString() + ChatColor.RESET);
                 }
             }
 
@@ -83,6 +83,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             this.getServer().getPluginManager().registerEvents(new TNTinst(), this);
             this.getServer().getPluginManager().registerEvents(new Eventhandlers(), this);
             this.getServer().getPluginManager().registerEvents(new SpawnProtection(), this);
+            initializeScoreboard();
             this.getCommand("break").setExecutor(this);
             this.getCommand("savekit").setExecutor(new savekit());
         } catch (Exception e) {
@@ -107,8 +108,8 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         System.out.println("FFA plugin enabled.");
         //Player p = Bukkit.getPlayer("UlrikWF");
         //p.sendMessage("hei");
-        scrbd = Bukkit.getScoreboardManager().getMainScoreboard();
-        initializeScoreboard();
+        //Player p = Bukkit.getPlayer("Chillbear");
+        //p.sendMessage("hei");
 
     }
 
@@ -310,23 +311,23 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             if (ranksJsonNode != null) {
                 // Iterate through each player entry in the JSON
                 for (JsonNode playerNode : ranksJsonNode) {
-                    String playerName = playerNode.get("name").asText();
-                    String rankName = playerNode.get("rank").asText();  // Use rank name as the team name
-                    String rankColorCode = playerNode.get("rankColor").asText();
-                    String prefix = playerNode.get("prefix").asText();
+                    String playerName = playerNode.get("name").toString();
+                    String priorty = playerNode.get("priority").toString();  // Use rank name as the team name
+                    String rankColorCode = playerNode.get("rankColor").toString();
+                    String prefix = playerNode.get("prefix").toString();
 
                     // Check if a team with this rank name exists; create if not
-                    Team team = scrbd.getTeam(rankName);
+                    Team team = scrbd.getTeam(prefix + rankColorCode);
                     if (team == null) {
-                        team = scrbd.registerNewTeam(rankName);
+                        team = scrbd.registerNewTeam(prefix + rankColorCode);
                     }
 
                     // Set the team prefix with color
                     ChatColor color = ChatColor.getByChar(rankColorCode.charAt(1)); // Assuming rankColor format like "&a"
                     if (color != null) {
-                        team.setPrefix(color + prefix);
+                        team.setPrefix(rankColorCode + prefix);
                     } else {
-                        team.setPrefix(prefix);
+                        team.setPrefix(rankColorCode + prefix);
                     }
 
                     // Set suffix as reset for consistent formatting if needed
@@ -368,12 +369,12 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         Objective obh = scoreboard.registerNewObjective("health", Criterias.HEALTH);
         obh.setDisplayName(ChatColor.RED + "❤");
         obh.setDisplaySlot(DisplaySlot.BELOW_NAME);
-        player.setScoreboard(scoreboard);
+
 
         for (Team mainTeam : scrbd.getTeams()) {
-            Team playerTeam = scrbd.getTeam(mainTeam.getName());
+            Team playerTeam = scoreboard.getTeam(mainTeam.getName());
             if (playerTeam == null) {
-                playerTeam = scrbd.registerNewTeam(mainTeam.getName());
+                playerTeam = scoreboard.registerNewTeam(mainTeam.getName());
             }
             playerTeam.setPrefix(mainTeam.getPrefix());
             playerTeam.setSuffix(ChatColor.RESET.toString() + mainTeam.getSuffix());
@@ -383,7 +384,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             }
         }
 
-
+        player.setScoreboard(scoreboard);
     }
 
 
