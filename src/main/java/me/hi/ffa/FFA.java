@@ -52,6 +52,19 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             fileHandler.setFormatter(new SimpleFormatter());
             logger.addHandler(fileHandler);
 
+//            JavaPlugin ranksPlugin = (JavaPlugin) Bukkit.getPluginManager().getPlugin("RanksV1");
+//            String ranks_folder_path = ranksPlugin.getDataFolder().getPath();
+//            File ranks_info_file = new File(ranks_folder_path, "ranks_info.json");
+//            JsonNode ranksJsonNode = JsonUtils.loadJson(ranks_info_file);
+//
+//
+//            if (ranksJsonNode != null) {
+//                for (Player player : Bukkit.getOnlinePlayers()) {
+//                    JsonNode playerNode = ranksJsonNode.get(player.getName());
+//                    player.sendMessage(ChatColor.getByChar(playerNode.get("rankColor").toPrettyString()) + playerNode.get("prefix").toString() + " " + playerNode.get("name").toString() + ChatColor.RESET);
+//                }
+//            }
+
             File dataFolder = getDataFolder();
             if (!dataFolder.exists()) {
                 dataFolder.mkdirs(); // Lager mappen hvis den ikke finnes
@@ -62,8 +75,6 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
                 logger.info("FFA_info.json filen ble opprettet.");
                 // Initialiser filen med grunnstrukturen
                 initFFA_info();
-            } else {
-                logger.info("FFA_info.json filen finnes allerede.");
             }
 
             this.getServer().getPluginManager().registerEvents(this, this);
@@ -275,6 +286,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
     private void updateScoreboard(Player player) {
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         Scoreboard scoreboard = manager.getNewScoreboard();
+
         Objective objective = scoreboard.registerNewObjective("Player", "dummy");
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         objective.setDisplayName(ChatColor.YELLOW + "" + ChatColor.BOLD + "⚔ FFA ⚔");
