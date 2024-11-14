@@ -44,7 +44,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
     private final HashMap<Player, List<String>> unlockedKits = new HashMap<>();
     private final HashMap<Player, Integer> deaths = new HashMap<>();
     private final HashMap<Player, Double> multiplier = new HashMap<>();
-    private Scoreboard scoreboard;
+    public Scoreboard scrbd;
 
     @Override
     public void onEnable() {
@@ -107,7 +107,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         System.out.println("FFA plugin enabled.");
         //Player p = Bukkit.getPlayer("UlrikWF");
         //p.sendMessage("hei");
-        scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        scrbd = Bukkit.getScoreboardManager().getMainScoreboard();
         initializeScoreboard();
 
     }
@@ -122,7 +122,6 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             this.invs.put(player, player.getInventory().getContents());
 
             player.sendMessage("Welcome to the FFA");
-            scoreboard.getTeam("blue").addPlayer(event.getPlayer());
             resetPlayer(player);
             Result result = this.getPlayerData(player, false);
             int kill = result.getKills();
@@ -287,6 +286,65 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         return items.toArray(new ItemStack[0]); // Convert list to array and return
     }
 
+    public void initializeScoreboard() {
+        // Get the main scoreboard
+        ScoreboardManager manager = Bukkit.getScoreboardManager();
+        scrbd = manager.getMainScoreboard();
+
+        // Get the RanksV1 plugin to access the ranks_info.json file
+        JavaPlugin ranksPlugin = (JavaPlugin) Bukkit.getPluginManager().getPlugin("RanksV1");
+        if (ranksPlugin == null) {
+            logger.warning("RanksV1 plugin not found!");
+            return;
+        }
+
+        // Define the path to ranks_info.json and initialize ObjectMapper
+        String ranksFolderPath = ranksPlugin.getDataFolder().getPath();
+        File ranksInfoFile = new File(ranksFolderPath, "ranks_info.json");
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        try {
+            // Load JSON data from ranks_info.json
+            JsonNode ranksJsonNode = objectMapper.readTree(ranksInfoFile);
+
+            if (ranksJsonNode != null) {
+                // Iterate through each player entry in the JSON
+                for (JsonNode playerNode : ranksJsonNode) {
+                    String playerName = playerNode.get("name").asText();
+                    String rankName = playerNode.get("rank").asText();  // Use rank name as the team name
+                    String rankColorCode = playerNode.get("rankColor").asText();
+                    String prefix = playerNode.get("prefix").asText();
+
+                    // Check if a team with this rank name exists; create if not
+                    Team team = scrbd.getTeam(rankName);
+                    if (team == null) {
+                        team = scrbd.registerNewTeam(rankName);
+                    }
+
+                    // Set the team prefix with color
+                    ChatColor color = ChatColor.getByChar(rankColorCode.charAt(1)); // Assuming rankColor format like "&a"
+                    if (color != null) {
+                        team.setPrefix(color + prefix);
+                    } else {
+                        team.setPrefix(prefix);
+                    }
+
+                    // Set suffix as reset for consistent formatting if needed
+                    team.setSuffix(ChatColor.RESET.toString());
+
+                    // Add each online player to their respective team
+                    Player player = Bukkit.getPlayer(playerName);
+                    if (player != null && player.isOnline()) {
+                        team.addEntry(player.getName());
+                        player.sendMessage(ChatColor.WHITE + prefix + playerName + ChatColor.RESET);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.severe("Error loading rank data from ranks_info.json: " + e.getMessage());
+            e.printStackTrace(); // Output stack trace for debugging
+        }
+    }
 
     private void updateScoreboard(Player player) {
         ScoreboardManager manager = Bukkit.getScoreboardManager();
@@ -311,16 +369,23 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         obh.setDisplayName(ChatColor.RED + "❤");
         obh.setDisplaySlot(DisplaySlot.BELOW_NAME);
         player.setScoreboard(scoreboard);
-    }
 
-    public void initializeScoreboard() {
-        if (scoreboard.getTeam("blue") != null) {
-            scoreboard.getTeam("blue").unregister();
+        for (Team mainTeam : scrbd.getTeams()) {
+            Team playerTeam = scrbd.getTeam(mainTeam.getName());
+            if (playerTeam == null) {
+                playerTeam = scrbd.registerNewTeam(mainTeam.getName());
+            }
+            playerTeam.setPrefix(mainTeam.getPrefix());
+            playerTeam.setSuffix(ChatColor.RESET.toString() + mainTeam.getSuffix());
+
+            for (String entry : mainTeam.getEntries()) {
+                playerTeam.addEntry(entry);
+            }
         }
-        Team t = scoreboard.registerNewTeam("blue");
-        t.setPrefix(ChatColor.BLUE + "");
+
 
     }
+
 
     /*
         try {
