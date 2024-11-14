@@ -44,6 +44,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
     private final HashMap<Player, List<String>> unlockedKits = new HashMap<>();
     private final HashMap<Player, Integer> deaths = new HashMap<>();
     private final HashMap<Player, Double> multiplier = new HashMap<>();
+    private Scoreboard scoreboard;
 
     @Override
     public void onEnable() {
@@ -52,18 +53,18 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             fileHandler.setFormatter(new SimpleFormatter());
             logger.addHandler(fileHandler);
 
-//            JavaPlugin ranksPlugin = (JavaPlugin) Bukkit.getPluginManager().getPlugin("RanksV1");
-//            String ranks_folder_path = ranksPlugin.getDataFolder().getPath();
-//            File ranks_info_file = new File(ranks_folder_path, "ranks_info.json");
-//            JsonNode ranksJsonNode = JsonUtils.loadJson(ranks_info_file);
-//
-//
-//            if (ranksJsonNode != null) {
-//                for (Player player : Bukkit.getOnlinePlayers()) {
-//                    JsonNode playerNode = ranksJsonNode.get(player.getName());
-//                    player.sendMessage(ChatColor.getByChar(playerNode.get("rankColor").toPrettyString()) + playerNode.get("prefix").toString() + " " + playerNode.get("name").toString() + ChatColor.RESET);
-//                }
-//            }
+            JavaPlugin ranksPlugin = (JavaPlugin) Bukkit.getPluginManager().getPlugin("RanksV1");
+            String ranks_folder_path = ranksPlugin.getDataFolder().getPath();
+            File ranks_info_file = new File(ranks_folder_path, "ranks_info.json");
+            JsonNode ranksJsonNode = JsonUtils.loadJson(ranks_info_file);
+
+
+            if (ranksJsonNode != null) {
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    JsonNode playerNode = ranksJsonNode.get(player.getName());
+                    player.sendMessage(ChatColor.getByChar(playerNode.get("rankColor").toPrettyString()) + playerNode.get("prefix").toString() + " " + playerNode.get("name").toString() + ChatColor.RESET);
+                }
+            }
 
             File dataFolder = getDataFolder();
             if (!dataFolder.exists()) {
@@ -84,16 +85,16 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             this.getServer().getPluginManager().registerEvents(new SpawnProtection(), this);
             this.getCommand("break").setExecutor(this);
             this.getCommand("savekit").setExecutor(new savekit());
-        } catch(Exception e) {
-                logger.severe("En feil oppstod under registrering av events eller kommandoer: " + e.getMessage());
-                e.printStackTrace(); // Skriver stacktrace til konsollen for debugging
+        } catch (Exception e) {
+            logger.severe("En feil oppstod under registrering av events eller kommandoer: " + e.getMessage());
+            e.printStackTrace(); // Skriver stacktrace til konsollen for debugging
         }
 
         try {
             this.getServer().getPluginManager().registerEvents(new kits(this), this);
             this.getCommand("kits").setExecutor(new kits(this));
             this.getCommand("editkits").setExecutor(new kits(this));
-        } catch(Exception e) {
+        } catch (Exception e) {
             logger.severe("En feil oppstod under registrering av events eller kommandoer (kits.java): " + e.getMessage());
             e.printStackTrace(); // Skriver stacktrace til konsollen for debugging
         }
@@ -106,6 +107,9 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         System.out.println("FFA plugin enabled.");
         //Player p = Bukkit.getPlayer("UlrikWF");
         //p.sendMessage("hei");
+        scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        initializeScoreboard();
+
     }
 
     @EventHandler
@@ -118,6 +122,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             this.invs.put(player, player.getInventory().getContents());
 
             player.sendMessage("Welcome to the FFA");
+            scoreboard.getTeam("blue").addPlayer(event.getPlayer());
             resetPlayer(player);
             Result result = this.getPlayerData(player, false);
             int kill = result.getKills();
@@ -131,7 +136,7 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
             player.getInventory().setHelmet(new ItemStack(Material.IRON_HELMET));
 
             ItemStack flintAndSteel = new ItemStack(Material.FLINT_AND_STEEL);
-            flintAndSteel.setDurability((short)64);
+            flintAndSteel.setDurability((short) 64);
 
             ItemStack[] basicKit = new ItemStack[]{
                     new ItemStack(Material.STONE_SWORD),
@@ -307,6 +312,80 @@ public final class FFA extends JavaPlugin implements Listener, CommandExecutor {
         obh.setDisplaySlot(DisplaySlot.BELOW_NAME);
         player.setScoreboard(scoreboard);
     }
+
+    public void initializeScoreboard() {
+        if (scoreboard.getTeam("blue") != null) {
+            scoreboard.getTeam("blue").unregister();
+        }
+        Team t = scoreboard.registerNewTeam("blue");
+        t.setPrefix(ChatColor.BLUE + "");
+
+    }
+
+    /*
+        try {
+            // Get path to ranks_info.json file from RanksV1 plugin
+            JavaPlugin ranksPlugin = (JavaPlugin) Bukkit.getPluginManager().getPlugin("RanksV1");
+            if (ranksPlugin == null) {
+                logger.warning("RanksV1 plugin not found!");
+                return;
+            }
+
+            String ranksFolderPath = ranksPlugin.getDataFolder().getPath();
+            File ranksInfoFile = new File(ranksFolderPath, "ranks_info.json");
+
+            // Load rank data from JSON
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode ranksJsonNode = objectMapper.readTree(ranksInfoFile);
+
+            if (ranksJsonNode != null) {
+                for (JsonNode playerNode : ranksJsonNode) {
+                    String playerName = playerNode.get("name").asText();
+                    String rankName = playerNode.get("rank").asText();
+                    String rankColorCode = playerNode.get("rankColor").asText();
+                    String prefix = playerNode.get("prefix").asText();
+
+                    // Check if a team for this rank already exists
+                    Team team = scoreboard.getTeam(rankName);
+                    if (team == null) {
+                        team = scoreboard.registerNewTeam(rankName);
+                    }
+
+                    // Set team prefix with color
+                    ChatColor color = ChatColor.getByChar(rankColorCode.charAt(1)); // Assuming rankColor is something like "&a"
+                    if (color != null) {
+                        team.setPrefix(color + prefix);
+                    } else {
+                        team.setPrefix(prefix);
+                    }
+
+                    // Set a reset suffix for visual separation if needed
+                    team.setSuffix(ChatColor.RESET.toString());
+
+                    // Add each online player to their respective team
+                    Player player = Bukkit.getPlayer(playerName);
+                    if (player != null && player.isOnline()) {
+                        team.addEntry(player.getName());
+                        player.sendMessage((ChatColor.WHITE) + prefix + playerName + ChatColor.RESET);
+                    }
+                }
+            }
+
+        } catch (IOException e) {
+            logger.severe("Error loading ranks_info.json: " + e.getMessage());
+        }
+    }
+
+    private void setupLogger() {
+        try {
+            FileHandler fileHandler = new FileHandler("error.log", true);
+            fileHandler.setFormatter(new SimpleFormatter());
+            logger.addHandler(fileHandler);
+        } catch (IOException e) {
+            logger.severe("Failed to initialize logger: " + e.getMessage());
+        }
+
+     */
 
 
     private void resetPlayer(Player player) {
